@@ -12,19 +12,23 @@ RUN apk add --no-cache \
     dovecot \
     postfix \
     tzdata \
-    su-exec
+    su-exec \
+    shadow \
+    procps \
+    coreutils
 
-# Setup direktori dan permission
+# Setup environment
 WORKDIR /opt/BillionMail
 COPY . .
-RUN chmod +x install.sh entrypoint.sh && \
-    mkdir -p ssl ssl-self-signed && \
-    chown -R nobody:nobody /opt/BillionMail
 
-# Setup init services
-RUN mkdir -p /etc/services.d/postgres /etc/services.d/redis && \
-    echo -e '#!/command/execlineb -P\ns6-setuidgid postgres\npostgres -D /var/lib/postgresql/data' > /etc/services.d/postgres/run && \
-    echo -e '#!/command/execlineb -P\ns6-setuidgid redis\nredis-server' > /etc/services.d/redis/run
+# Fix permissions dan inisialisasi
+RUN chmod +x install.sh entrypoint.sh && \
+    mkdir -p \
+    /run/postgresql \
+    /var/lib/postgresql/data \
+    /var/log/{postgresql,redis,rspamd,dovecot,postfix} && \
+    chown -R postgres:postgres /var/lib/postgresql /run/postgresql && \
+    chmod 2775 /var/lib/postgresql /run/postgresql
 
 # Generate SSL
 RUN openssl genrsa -out ssl-self-signed/key.pem 2048 && \
